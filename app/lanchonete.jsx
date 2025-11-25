@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Platform, FlatList, Image, Text, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getItems } from './data/cafeEscolaItens.js';
 
@@ -63,9 +62,6 @@ function Navbar({ placeholder = 'Buscar no café escola...' }) {
 	return (
 		<SafeAreaView style={styles.safe}>
 			<View style={styles.container}>
-				<TouchableOpacity onPress={() => router.push('/home')} accessibilityLabel="Ir para home" style={{ marginRight: 8 }}>
-					<Ionicons name="home" size={24} color="#fff" />
-				</TouchableOpacity>
 				<TouchableOpacity onPress={() => router.back()} accessibilityLabel="Voltar">
 					<Ionicons name="arrow-back" size={24} color="#fff" />
 				</TouchableOpacity>

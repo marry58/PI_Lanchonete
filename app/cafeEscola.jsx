@@ -7,7 +7,6 @@ import {
     SafeAreaView,
     Platform,
     FlatList,
-    Image,
     Text,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -118,7 +117,7 @@ function InfoCard({ item, onPress, admStats }) {
             activeOpacity={0.8}
         >
             <View style={styles.cardLeft}>
-                <Image source={item.image} style={styles.image} resizeMode="cover" />
+                {/* <Image source={item.image} style={styles.image} resizeMode="cover" /> */}
             </View>
 
             <View style={styles.cardRight}>

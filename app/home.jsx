@@ -100,7 +100,8 @@ const styles = StyleSheet.create({
 
     box1: {
         width: "100%",
-        height: "28%", // um pouco menor para caber os campos
+        height: "28%" // um pouco menor para caber os campos
+        ,
         justifyContent: "center",
         alignItems: "center",
         paddingTop: 12,

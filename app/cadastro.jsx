@@ -151,9 +151,6 @@ export default function About() {
       source={require("../assets/background.png")}
       resizeMode="cover"
     >
-      <TouchableOpacity style={{ position: 'absolute', left: 12, top: Platform.OS === 'android' ? 30 : 14, zIndex: 60 }} onPress={() => router.push('/home')} accessibilityLabel="Ir para home">
-        <Ionicons name="home" size={22} color="#024281" />
-      </TouchableOpacity>
       {/* camada branca semi-transparente sobre o fundo */}
       <View style={styles.overlay} />
 
