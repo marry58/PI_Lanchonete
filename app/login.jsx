@@ -3,7 +3,6 @@ import { SafeAreaView, View, Text, ImageBackground, TextInput, Image, StatusBar,
 import { useRouter } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import supabase from './lib/supabase';
-import { Ionicons } from '@expo/vector-icons';
 
 const { width: WINDOW_WIDTH } = Dimensions.get("window");
 const BUTTON_MAX_WIDTH = 420;
@@ -102,9 +101,6 @@ export default function About() {
       source={require("../assets/background.png")}
       resizeMode="cover"
     >
-      <TouchableOpacity style={{ position: 'absolute', left: 12, top: Platform.OS === 'android' ? 30 : 14, zIndex: 60 }} onPress={() => router.push('/home')} accessibilityLabel="Ir para home">
-        <Ionicons name="home" size={22} color="#024281" />
-      </TouchableOpacity>
       {/* camada branca semi-transparente sobre o fundo */}
       <View style={styles.overlay} />
 
