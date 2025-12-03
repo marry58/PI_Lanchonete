@@ -13,86 +13,143 @@ const fields = [
   "Senha",
 ];
 
+const LOCAL_USERS_KEY = '@users';
+const normalizeEmail = (value = '') => value.trim().toLowerCase();
+
+const ADMIN_EMAIL = 'adminsis@gmail.com';
+const ADMIN_PASSWORD = '123456';
+
+const findLocalUser = async (email, senha) => {
+  try {
+    const stored = await AsyncStorage.getItem(LOCAL_USERS_KEY);
+    if (!stored) return null;
+    const users = JSON.parse(stored);
+    const normalizedEmail = normalizeEmail(email);
+    return (
+      users.find(
+        (item) => normalizeEmail(item.email) === normalizedEmail && (item.senha ?? '') === senha
+      ) || null
+    );
+  } catch (storageErr) {
+    console.warn('Erro ao buscar usuario local:', storageErr);
+    return null;
+  }
+};
+
 export default function About() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
 
   const onLogin = async () => {
-    if (!email || !senha) {
+    const emailLimpo = email.trim();
+    const senhaLimpa = senha.trim();
+
+    if (!emailLimpo || !senhaLimpa) {
       Alert.alert("Preencha email e senha");
       return;
     }
+
+    const isAdminCredential =
+      normalizeEmail(emailLimpo) === normalizeEmail(ADMIN_EMAIL) && senhaLimpa === ADMIN_PASSWORD;
+    if (isAdminCredential) {
+      const adminProfile = {
+        email: ADMIN_EMAIL,
+        nome: 'Administrador',
+        role: 'admin',
+        localOnly: true,
+      };
+      await AsyncStorage.setItem('@user', JSON.stringify(adminProfile));
+      await AsyncStorage.setItem('@usuario', JSON.stringify(adminProfile));
+      router.push('/admin');
+      return;
+    }
+
+    let supabaseAuthenticated = false;
+    let supabaseUser = null;
     try {
       // supabase auth: sign in with password
-      const res = await supabase.auth.signInWithPassword({ email, password: senha });
+      const res = await supabase.auth.signInWithPassword({ email: emailLimpo, password: senhaLimpa });
       if (res.error) {
-        Alert.alert('Erro', res.error.message || 'Não foi possível autenticar.');
-        return;
-      }
-      const user = res.data?.user ?? null;
-      if (!user) {
-        Alert.alert('Erro', 'Usuário não retornado pelo provedor de autenticação.');
-        return;
-      }
-
-      // tenta buscar registro na tabela 'usuario' pelo auth_user_id
-      try {
-        let usuarioRecord = null;
-        const { data: byAuth, error: errAuth } = await supabase
-          .from('usuario')
-          .select('*')
-          .eq('auth_user_id', user.id)
-          .maybeSingle();
-
-        if (errAuth) {
-          console.warn('Erro ao buscar usuario por auth_user_id:', errAuth);
-        }
-        if (byAuth) {
-          usuarioRecord = byAuth;
+        console.warn('Supabase login error:', res.error);
+      } else {
+        const user = res.data?.user ?? null;
+        if (!user) {
+          console.warn('Supabase não retornou usuário.');
         } else {
-          // tenta buscar por email como fallback
-          const { data: byEmail, error: errEmail } = await supabase
-            .from('usuario')
-            .select('*')
-            .eq('email', user.email)
-            .maybeSingle();
-          if (errEmail) console.warn('Erro ao buscar usuario por email:', errEmail);
-          usuarioRecord = byEmail || null;
-        }
+          supabaseAuthenticated = true;
+          supabaseUser = user;
+          // tenta buscar registro na tabela 'usuario' pelo auth_user_id
+          try {
+            let usuarioRecord = null;
+            const { data: byAuth, error: errAuth } = await supabase
+              .from('usuario')
+              .select('*')
+              .eq('auth_user_id', user.id)
+              .maybeSingle();
 
-        // se não existir, cria um registro mínimo em 'usuario'
-        if (!usuarioRecord) {
-          const payload = {
-            auth_user_id: user.id,
-            nome: user.user_metadata?.nome ?? null,
-            email: user.email,
-            created_at: new Date().toISOString(),
-          };
-          const { data: created, error: createErr } = await supabase
-            .from('usuario')
-            .insert([payload])
-            .select()
-            .maybeSingle();
-          if (createErr) {
-            console.warn('Erro ao criar registro usuario:', createErr);
-          } else {
-            usuarioRecord = created;
+            if (errAuth) {
+              console.warn('Erro ao buscar usuario por auth_user_id:', errAuth);
+            }
+            if (byAuth) {
+              usuarioRecord = byAuth;
+            } else {
+              // tenta buscar por email como fallback
+              const { data: byEmail, error: errEmail } = await supabase
+                .from('usuario')
+                .select('*')
+                .eq('email', user.email)
+                .maybeSingle();
+              if (errEmail) console.warn('Erro ao buscar usuario por email:', errEmail);
+              usuarioRecord = byEmail || null;
+            }
+
+            // se não existir, cria um registro mínimo em 'usuario'
+            if (!usuarioRecord) {
+              const payload = {
+                auth_user_id: user.id,
+                nome: user.user_metadata?.nome ?? null,
+                email: user.email,
+                created_at: new Date().toISOString(),
+              };
+              const { data: created, error: createErr } = await supabase
+                .from('usuario')
+                .insert([payload])
+                .select()
+                .maybeSingle();
+              if (createErr) {
+                console.warn('Erro ao criar registro usuario:', createErr);
+              } else {
+                usuarioRecord = created;
+              }
+            }
+
+            // persistir localmente o usuario (se houver), e também guardar o auth user
+            await AsyncStorage.setItem('@user', JSON.stringify(user));
+            if (usuarioRecord) await AsyncStorage.setItem('@usuario', JSON.stringify(usuarioRecord));
+          } catch (dbErr) {
+            console.warn('Erro ao sincronizar usuario localmente:', dbErr);
           }
         }
-
-        // persistir localmente o usuario (se houver), e também guardar o auth user
-        await AsyncStorage.setItem('@user', JSON.stringify(user));
-        if (usuarioRecord) await AsyncStorage.setItem('@usuario', JSON.stringify(usuarioRecord));
-      } catch (dbErr) {
-        console.warn('Erro ao sincronizar usuario localmente:', dbErr);
       }
-
-      router.push('/home');
     } catch (err) {
       console.error('Login error', err);
-      Alert.alert('Erro', 'Não foi possível autenticar. Tente novamente.');
     }
+
+    if (supabaseAuthenticated && supabaseUser) {
+      router.push('/home');
+      return;
+    }
+
+    const localUser = await findLocalUser(emailLimpo, senhaLimpa);
+    if (localUser) {
+      await AsyncStorage.setItem('@usuario', JSON.stringify(localUser));
+      await AsyncStorage.setItem('@user', JSON.stringify({ email: localUser.email, localOnly: true }));
+      router.push('/home');
+      return;
+    }
+
+    Alert.alert('Erro', 'Não foi possível autenticar. Verifique email e senha.');
   };
 
   return (

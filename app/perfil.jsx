@@ -4,6 +4,30 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const formatISOToDate = (value = '') => {
+  if (!value) return '';
+  try {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const year = d.getUTCFullYear();
+    return `${day}/${month}/${year}`;
+  } catch (e) {
+    return value;
+  }
+};
+
+const toISODate = (value = '') => {
+  if (!value) return null;
+  const parts = value.split('/');
+  if (parts.length === 3) {
+    const [day, month, year] = parts;
+    return `${year}-${month}-${day}`;
+  }
+  return value;
+};
+
 export default function Perfil() {
   const router = useRouter();
   const handleBack = () => {
@@ -35,9 +59,25 @@ export default function Perfil() {
 
   async function loadProfile() {
     try {
-      const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setProfile((p) => ({ ...p, ...JSON.parse(stored) }));
+      const storedProfile = await AsyncStorage.getItem(STORAGE_KEY);
+      if (storedProfile) {
+        setProfile((p) => ({ ...p, ...JSON.parse(storedProfile) }));
+        return;
+      }
+
+      const storedUsuario = await AsyncStorage.getItem('@usuario');
+      if (storedUsuario) {
+        const usuario = JSON.parse(storedUsuario);
+        const fallbackProfile = {
+          nome: usuario.nome ?? '',
+          email: usuario.email ?? '',
+          unidade: usuario.unidade ?? '',
+          cpf: usuario.cpf ?? '',
+          nasc: usuario.nasc ? formatISOToDate(usuario.nasc) : '',
+          cep: usuario.cep ?? '',
+          telefone: usuario.telefone ?? '',
+        };
+        setProfile((p) => ({ ...p, ...fallbackProfile }));
       }
     } catch (err) {
       console.error('Erro ao carregar perfil', err);
@@ -50,6 +90,20 @@ export default function Perfil() {
     try {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       setProfile((p) => ({ ...p, ...data }));
+
+      const usuarioRaw = await AsyncStorage.getItem('@usuario');
+      const usuarioParsed = usuarioRaw ? JSON.parse(usuarioRaw) : {};
+      const updatedUsuario = {
+        ...usuarioParsed,
+        nome: data.nome,
+        email: data.email,
+        unidade: data.unidade,
+        cpf: data.cpf,
+        cep: data.cep,
+        nasc: toISODate(data.nasc) || usuarioParsed.nasc || null,
+        telefone: data.telefone,
+      };
+      await AsyncStorage.setItem('@usuario', JSON.stringify(updatedUsuario));
       Alert.alert('Perfil salvo', 'As alterações foram salvas localmente.');
     } catch (err) {
       console.error('Erro ao salvar perfil', err);

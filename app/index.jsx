@@ -33,21 +33,25 @@ export default function About() {
           {/* Usar asChild para que o TouchableOpacity receba as props de navegação */}
           <Link href="./cadastro" asChild>
             <TouchableOpacity
-              style={[styles.button, { width: BUTTON_WIDTH }]}
+              style={[styles.buttonTouchable, { width: BUTTON_WIDTH }]}
               accessibilityRole="button"
               accessibilityLabel="Cadastrar"
             >
-              <Text style={styles.text}>Cadastrar</Text>
+              <View style={styles.button}>
+                <Text style={styles.text}>Cadastrar</Text>
+              </View>
             </TouchableOpacity>
           </Link>
 
           <Link href="./login" asChild>
             <TouchableOpacity
-              style={[styles.button, styles.buttonSecondary, { width: BUTTON_WIDTH }]}
+              style={[styles.buttonTouchable, { width: BUTTON_WIDTH }]}
               accessibilityRole="button"
               accessibilityLabel="Entrar"
             >
-              <Text style={styles.text}>Entrar</Text>
+              <View style={styles.button}>
+                <Text style={styles.text}>Entrar</Text>
+              </View>
             </TouchableOpacity>
           </Link>
         </View>
@@ -119,12 +123,18 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
   },
 
+  buttonTouchable: {
+    width: '100%',
+  },
+
   button: {
-    height: 52,
-    borderRadius: 12,
+    width: '100%',
+    height: 60,
+    borderRadius: 20,
     backgroundColor: "#024281",
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 23,
     marginVertical: 8,
     ...Platform.select({
       ios: {
@@ -138,12 +148,8 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  buttonSecondary: {
-    backgroundColor: "#024281",
-  },
-
   text: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: "700",
     color: "#FF9749",
     textTransform: "uppercase",

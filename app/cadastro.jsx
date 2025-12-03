@@ -59,6 +59,21 @@ const formatDate = (value) => {
   return v.replace(/(\d{2})(\d)/, "$1/$2").replace(/(\d{2})(\d)/, "$1/$2");
 };
 
+const LOCAL_USERS_KEY = '@users';
+const normalizeEmail = (value = '') => value.trim().toLowerCase();
+
+const saveLocalCredential = async (payload) => {
+  try {
+    const stored = await AsyncStorage.getItem(LOCAL_USERS_KEY);
+    const list = stored ? JSON.parse(stored) : [];
+    const filtered = list.filter((item) => normalizeEmail(item.email) !== normalizeEmail(payload.email));
+    filtered.push(payload);
+    await AsyncStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(filtered));
+  } catch (storageErr) {
+    console.warn('Erro ao salvar usuario localmente:', storageErr);
+  }
+};
+
 export default function About() {
   const router = useRouter();
   const [form, setForm] = useState({
@@ -80,18 +95,21 @@ export default function About() {
   };
 
   const handleRegister = async () => {
-    const { nome, email, senha } = form;
-    if (!nome || !email || !senha) {
+    const nomeLimpo = form.nome.trim();
+    const emailLimpo = form.email.trim();
+    const senhaLimpa = form.senha.trim();
+
+    if (!nomeLimpo || !emailLimpo || !senhaLimpa) {
       Alert.alert('Preencha Nome, Email e Senha');
       return;
     }
     try {
       // criar conta no supabase auth
       const { data: signData, error: signError } = await supabase.auth.signUp({
-        email: email,
-        password: senha,
+        email: emailLimpo,
+        password: senhaLimpa,
         options: {
-          data: { nome, cep: form.cep ?? null, unidade: form.unidade ?? null, cpf: form.cpf ?? null, nasc: form.nasc ?? null }
+          data: { nome: nomeLimpo, cep: form.cep ?? null, unidade: form.unidade ?? null, cpf: form.cpf ?? null, nasc: form.nasc ?? null }
         }
       });
       if (signError) {
@@ -101,11 +119,22 @@ export default function About() {
 
       // id do auth (quando disponível)
       const authUserId = signData?.user?.id ?? null;
+      const localCredential = {
+        id: authUserId ?? Date.now().toString(),
+        nome: nomeLimpo,
+        email: emailLimpo,
+        senha: senhaLimpa,
+        cep: form.cep ?? '',
+        unidade: form.unidade ?? '',
+        cpf: form.cpf ?? '',
+        nasc: form.nasc ?? '',
+        created_at: new Date().toISOString(),
+      };
       // preparar objeto para inserir na tabela "usuario"
       const usuarioPayload = {
         auth_user_id: authUserId,
-        nome,
-        email,
+        nome: nomeLimpo,
+        email: emailLimpo,
         cpf: form.cpf || null,
         cep: form.cep || null,
         unidade: form.unidade || null,
@@ -129,12 +158,22 @@ export default function About() {
       } catch (dbErr) {
         console.warn('Erro ao inserir usuario no Supabase:', dbErr);
         // fallback: salvar perfil localmente
-        const profile = { id: authUserId ?? Date.now().toString(), nome, email, created_at: new Date().toISOString() };
-        const stored = await AsyncStorage.getItem('@users');
-        const arr = stored ? JSON.parse(stored) : [];
-        arr.push(profile);
-        await AsyncStorage.setItem('@users', JSON.stringify(arr));
       }
+
+      await saveLocalCredential(localCredential);
+
+      const profileSnapshot = {
+        nome: nomeLimpo,
+        email: emailLimpo,
+        senha: senhaLimpa,
+        turma: form.turma ?? '',
+        unidade: form.unidade ?? '',
+        cpf: form.cpf ?? '',
+        nasc: form.nasc ?? '',
+        cep: form.cep ?? '',
+        telefone: form.telefone ?? '',
+      };
+      await AsyncStorage.setItem('@user_profile', JSON.stringify(profileSnapshot));
 
       Alert.alert('Sucesso', 'Cadastro efetuado. Verifique seu email (se for necessário confirmar).', [
         { text: 'Ok', onPress: () => router.push('./home') }

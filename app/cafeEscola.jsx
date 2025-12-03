@@ -64,11 +64,18 @@ function useAdmStats() {
 
 function Navbar({ placeholder = 'Buscar no café escola...', value, onChange }) {
     const router = useRouter();
+    const handleBack = () => {
+        if (router.canGoBack()) {
+            router.back();
+        } else {
+            router.push('/home');
+        }
+    };
 
     return (
         <SafeAreaView style={styles.safe}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} accessibilityLabel="Voltar" style={styles.backBtn}>
+                <TouchableOpacity onPress={handleBack} accessibilityLabel="Voltar" style={styles.backBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <Ionicons name="arrow-back" size={22} color="#222" />
                 </TouchableOpacity>
 
