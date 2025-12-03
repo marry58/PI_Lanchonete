@@ -1,9 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Platform, FlatList, Image, Text, Alert } from 'react-native';
+import { View, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Platform, FlatList, Image, Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getItems } from './data/cafeEscolaItens.js';
+
+const BLOCKED_TITLES = ['moranguinho'];
+const isBlocked = (title) => {
+	if (!title) return false;
+	const normalized = String(title).toLowerCase();
+	return BLOCKED_TITLES.some((ban) => normalized.includes(ban));
+};
 
 // obtem lista inicial de itens do data e mescla com itens locais (vendor='sesc')
 function useMergedItemsForSesc() {
@@ -11,11 +18,11 @@ function useMergedItemsForSesc() {
 	useEffect(() => {
 		let mounted = true;
 		(async () => {
-			const base = getItems();
+			const base = getItems().filter((item) => !isBlocked(item.title));
 			try {
 				const raw = await AsyncStorage.getItem('@products');
 				const local = raw ? JSON.parse(raw) : [];
-				const localSesc = (local || []).filter(p => p.vendor === 'sesc');
+				const localSesc = (local || []).filter(p => p.vendor === 'sesc' && !isBlocked(p.title));
 				if (mounted) setItems([...localSesc, ...base]);
 			} catch (e) {
 				if (mounted) setItems(base);
@@ -26,47 +33,13 @@ function useMergedItemsForSesc() {
 	return items;
 }
 
-function useAdmStats() {
-	const [stats, setStats] = useState({});
-	useEffect(() => {
-		let mounted = true;
-		(async () => {
-			try {
-				const raw = await AsyncStorage.getItem('@adm_pedidos');
-				const adm = raw ? JSON.parse(raw) : [];
-				const map = {};
-				(adm || []).forEach(r => {
-					const pid = String(r.product_id || r.metadata?.product_id || '');
-					if (!pid) return;
-					if (!map[pid]) map[pid] = { count: 0, names: [] };
-					map[pid].count += Number(r.qty || 0);
-					// adicionar nomes repetidos (já armazenados)
-					if (Array.isArray(r.names) && r.names.length) {
-						map[pid].names.push(...r.names);
-					} else if (r.note) {
-						map[pid].names.push(...r.note.split(',').map(s => s.trim()));
-					}
-				});
-				if (mounted) setStats(map);
-			} catch (e) {
-				if (mounted) setStats({});
-			}
-		})();
-		return () => { mounted = false; };
-	}, []);
-	return stats;
-}
-
-function Navbar({ placeholder = 'Buscar no café escola...' }) {
+function Navbar({ placeholder = 'Buscar na lanchonete...', value, onChange }) {
 	const router = useRouter();
 
 	return (
 		<SafeAreaView style={styles.safe}>
 			<View style={styles.container}>
-				<TouchableOpacity onPress={() => router.push('/home')} accessibilityLabel="Ir para home" style={{ marginRight: 8 }}>
-					<Ionicons name="home" size={24} color="#fff" />
-				</TouchableOpacity>
-				<TouchableOpacity onPress={() => router.back()} accessibilityLabel="Voltar">
+				<TouchableOpacity onPress={() => router.back()} accessibilityLabel="Voltar" style={{ marginRight: 8 }}>
 					<Ionicons name="arrow-back" size={24} color="#fff" />
 				</TouchableOpacity>
 
@@ -76,9 +49,13 @@ function Navbar({ placeholder = 'Buscar no café escola...' }) {
 						placeholder={placeholder}
 						placeholderTextColor="#999"
 						style={styles.searchInput}
+						value={value}
+						onChangeText={onChange}
 						returnKeyType="search"
 						accessible
 						accessibilityLabel="Busca"
+						autoCapitalize="none"
+						autoCorrect={false}
 					/>
 				</View>
 
@@ -95,22 +72,12 @@ function Navbar({ placeholder = 'Buscar no café escola...' }) {
 	);
 }
 
-function InfoCard({ item, onPress, admStats }) {
-	const stat = admStats?.[String(item.id)] || { count: 0, names: [] };
+function InfoCard({ item, onPress }) {
 
 	return (
 		<TouchableOpacity style={styles.card} onPress={() => onPress(item)} accessibilityRole="button" accessibilityLabel={item.title}>
 			<View style={styles.imageWrap}>
 				<Image source={item.image} style={styles.image} resizeMode="cover" />
-				{/* badge */}
-				{stat.count > 0 ? (
-					<TouchableOpacity
-						style={{ position: 'absolute', right: 8, top: 8, backgroundColor: '#e8f4fb', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 10 }}
-						onPress={() => Alert.alert(item.title, (stat.names.length ? stat.names : [String(stat.count)]).join('\n'))}
-					>
-						<Text style={{ color: '#024281', fontWeight: '700' }}>{stat.count}</Text>
-					</TouchableOpacity>
-				) : null}
 			</View>
 			<Text style={styles.cardTitle}>{item.title}</Text>
 		</TouchableOpacity>
@@ -120,20 +87,30 @@ function InfoCard({ item, onPress, admStats }) {
 export default function LanchoneteScreen() {
 	const router = useRouter();
 	const items = useMergedItemsForSesc();
-	const admStats = useAdmStats();
+	const [search, setSearch] = useState('');
 	const openDetail = (item) => { router.push(`/lanchonete/${item.id}`); };
+
+	const normalizedQuery = search.trim().toLowerCase();
+	const visibleItems = normalizedQuery
+		? items.filter((item) => String(item.title || '').toLowerCase().includes(normalizedQuery))
+		: items;
 
 	return (
 		<View style={{ flex: 1 }}>
-			<Navbar />
+			<Navbar value={search} onChange={setSearch} />
 
 			<FlatList
-				data={items}
+				data={visibleItems}
 				keyExtractor={(i) => i.id}
 				numColumns={2}
 				columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 16 }}
 				contentContainerStyle={{ paddingVertical: 18 }}
-				renderItem={({ item }) => <InfoCard item={item} onPress={openDetail} admStats={admStats} />}
+				renderItem={({ item }) => <InfoCard item={item} onPress={openDetail} />}
+				ListEmptyComponent={() => (
+					<Text style={{ textAlign: 'center', marginTop: 32, color: '#666' }}>
+						Nenhum item encontrado
+					</Text>
+				)}
 			/>
 		</View>
 	);

@@ -63,7 +63,7 @@ function useAdmStats() {
     return stats;
 }
 
-function Navbar({ placeholder = 'Buscar no café escola...' }) {
+function Navbar({ placeholder = 'Buscar no café escola...', value, onChange }) {
     const router = useRouter();
 
     return (
@@ -96,9 +96,13 @@ function Navbar({ placeholder = 'Buscar no café escola...' }) {
                     placeholder={placeholder}
                     placeholderTextColor="#999"
                     style={styles.searchInput}
+                    value={value}
+                    onChangeText={onChange}
                     returnKeyType="search"
                     accessible
                     accessibilityLabel="Busca"
+                    autoCapitalize="none"
+                    autoCorrect={false}
                 />
             </View>
         </SafeAreaView>
@@ -140,26 +144,30 @@ export default function LanchoneteScreen() {
     const items = useMergedItemsForSenac();
     const admStats = useAdmStats();
     const openDetail = (item) => { router.push(`/lanchonete/${item.id}`); };
+    const [search, setSearch] = useState('');
+
+    const normalized = search.trim().toLowerCase();
+    const visibleItems = normalized
+        ? items.filter((item) => String(item.title || '').toLowerCase().includes(normalized))
+        : items;
 
     return (
         <View style={styles.screen}>
-            <TouchableOpacity
-                style={{ position: 'absolute', left: 12, top: Platform.OS === 'android' ? 30 : 14, zIndex: 60 }}
-                onPress={() => router.push('/home')}
-                accessibilityLabel="Ir para home"
-            >
-                <Ionicons name="home" size={22} color="#222" />
-            </TouchableOpacity>
-             <Navbar />
+             <Navbar value={search} onChange={setSearch} />
 
             <FlatList
-                data={items}
+                data={visibleItems}
                 keyExtractor={(i) => String(i.id)}
                 numColumns={1}
                 contentContainerStyle={{ paddingVertical: 12, paddingHorizontal: 12 }}
                 renderItem={({ item }) => <InfoCard item={item} onPress={openDetail} admStats={admStats} />}
                 ItemSeparatorComponent={() => <View style={styles.separator} />}
                 showsVerticalScrollIndicator={false}
+                ListEmptyComponent={() => (
+                    <Text style={{ textAlign: 'center', marginTop: 32, color: '#666' }}>
+                        Nenhum item encontrado
+                    </Text>
+                )}
             />
             
         </View>

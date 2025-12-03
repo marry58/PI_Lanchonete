@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, ImageBackground, Image, StatusBar, StyleSheet, Platform, Dimensions, } from "react-native";
+import { View, Text, ImageBackground, Image, StatusBar, StyleSheet, Platform, Dimensions, TouchableOpacity, } from "react-native";
 import { Link } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -31,24 +31,24 @@ export default function About() {
 
         <View style={styles.box2}>
           {/* Usar asChild para que o TouchableOpacity receba as props de navegação */}
-          <Link href="./cadastro">
-            <View
+          <Link href="./cadastro" asChild>
+            <TouchableOpacity
               style={[styles.button, { width: BUTTON_WIDTH }]}
               accessibilityRole="button"
               accessibilityLabel="Cadastrar"
             >
               <Text style={styles.text}>Cadastrar</Text>
-            </View>
+            </TouchableOpacity>
           </Link>
 
-          <Link href="./login">
-            <View
+          <Link href="./login" asChild>
+            <TouchableOpacity
               style={[styles.button, styles.buttonSecondary, { width: BUTTON_WIDTH }]}
               accessibilityRole="button"
               accessibilityLabel="Entrar"
             >
               <Text style={styles.text}>Entrar</Text>
-            </View>
+            </TouchableOpacity>
           </Link>
         </View>
 

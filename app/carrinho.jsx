@@ -341,10 +341,15 @@ export default function Carrinho() {
     return (
         <SafeAreaView style={styles.safe}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} accessibilityLabel="Voltar">
-                    <Text style={styles.back}>←</Text>
+                <TouchableOpacity
+                    onPress={() => (router.canGoBack() ? router.back() : router.push('/home'))}
+                    accessibilityLabel="Voltar"
+                    style={styles.backButton}
+                >
+                    <Ionicons name="arrow-back" size={28} color="#fff" />
                 </TouchableOpacity>
                 <Text style={styles.title}>Carrinho</Text>
+                <View style={{ width: 40 }} />
             </View>
 
             <View style={styles.container}>
@@ -388,9 +393,20 @@ export default function Carrinho() {
 
 const styles = StyleSheet.create({
     safe: { flex: 1, backgroundColor: '#fff' },
-    header: { height: 56, backgroundColor: '#123a63', justifyContent: 'center', paddingLeft: 12 },
-    back: { position: 'absolute', left: 12, top: 16, color: '#fff' },
-    title: { color: '#fff', textAlign: 'center', fontWeight: '700', fontSize: 18 },
+    header: {
+        height: 60,
+        backgroundColor: '#123a63',
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        justifyContent: 'space-between',
+        paddingHorizontal: 12,
+        paddingBottom: 8,
+    },
+    backButton: {
+        paddingVertical: 4,
+        paddingRight: 12,
+    },
+    title: { color: '#fff', fontWeight: '700', fontSize: 18 },
     container: { flex: 1, padding: 12 },
     itemRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, backgroundColor: '#f6f8fa', padding: 8, borderRadius: 8 },
     thumb: { width: 64, height: 64, borderRadius: 8, backgroundColor: '#eee' },

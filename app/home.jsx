@@ -54,16 +54,6 @@ export default function About() {
                             <Text style={styles.text}>Café escola</Text>
                         </View>
                     </Link>
-                    <Text style={styles.fieldLabel}>Pedidos</Text>
-                    <Link href="./admin">
-                        <View
-                            style={[styles.button, styles.buttonSpacing, { width: BUTTON_WIDTH }]}
-                            accessibilityRole="button"
-                            accessibilityLabel="Pedidos"
-                        >
-                            <Text style={styles.text}>Cadastrar escola</Text>
-                        </View>
-                    </Link>
                     <Text style={styles.fieldLabel}>Senac</Text>
                 </View>
 

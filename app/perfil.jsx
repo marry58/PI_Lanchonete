@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { SafeAreaView, View, Text, Image, TextInput, TouchableOpacity, StyleSheet, StatusBar, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { Link } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Perfil() {
+  const router = useRouter();
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.push('/home');
+    }
+  };
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({
@@ -141,9 +150,14 @@ export default function Perfil() {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" />
       <View style={styles.header}>
-        <Link href=".." accessibilityLabel="Voltar">
-          <Text style={styles.back}>←</Text>
-        </Link>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={handleBack}
+          accessibilityLabel="Voltar"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="arrow-back" size={28} color="#fff" />
+        </TouchableOpacity>
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
@@ -196,8 +210,17 @@ export default function Perfil() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#ffffff' },
-  header: { height: 52, backgroundColor: '#123a63', justifyContent: 'center', paddingLeft: 12 },
-  back: { color: '#fff', fontWeight: '700' },
+  header: {
+    height: 68,
+    backgroundColor: '#123a63',
+    justifyContent: 'flex-end',
+    paddingLeft: 16,
+    paddingBottom: 6,
+  },
+  backButton: {
+    paddingVertical: 4,
+    paddingRight: 12,
+  },
   container: { flex: 1, alignItems: 'center', padding: 18 },
   title: { color: '#f28b3a', fontSize: 20, fontStyle: 'italic', fontWeight: '700', marginBottom: 8 },
   avatar: { width: 120, height: 120, borderRadius: 16, marginVertical: 10 },

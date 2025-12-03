@@ -77,11 +77,13 @@ export default function ItemDetail() {
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
-            <TouchableOpacity style={{ position: 'absolute', left: 12, top: Platform.OS === 'android' ? 30 : 14, zIndex: 60 }} onPress={() => router.push('/home')} accessibilityLabel="Ir para home">
-                <Ionicons name="home" size={22} color="#0b4a74" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.back} onPress={() => router.back()} accessibilityLabel="Voltar">
-                <Text style={styles.backText}>←</Text>
+            <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => (router.canGoBack() ? router.back() : router.push('/home'))}
+                accessibilityLabel="Voltar"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+                <Ionicons name="arrow-back" size={26} color="#0b4a74" />
             </TouchableOpacity>
 
             <Text style={styles.title}>{item.title}</Text>
@@ -122,8 +124,19 @@ export default function ItemDetail() {
 
 const styles = StyleSheet.create({
     container: { alignItems: 'center', padding: 20 },
-    back: { alignSelf: 'flex-start', marginBottom: 12 },
-    backText: { color: '#0b4a74', fontWeight: '600' },
+    backButton: {
+        position: 'absolute',
+        left: 16,
+        top: Platform.OS === 'android' ? 48 : 36,
+        zIndex: 60,
+        padding: 6,
+        borderRadius: 999,
+        backgroundColor: 'rgba(255,255,255,0.9)',
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 3 },
+            android: { elevation: 2 },
+        }),
+    },
     title: { fontSize: 30, color: '#FF9749', fontWeight: '700', marginBottom: 12 },
     image: { width: 240, height: 240, marginBottom: 12 },
     price: { fontSize: 28, color: '#024281', fontWeight: '600', marginBottom: 8 },
